@@ -2,8 +2,11 @@
 import net.miginfocom.swing.MigLayout;
 import groovy.swing.SwingBuilder
 import groovy.swing.factory.LayoutFactory
-import static javax.swing.JFrame.*
+import javax.swing.*
 import groovy.text.SimpleTemplateEngine
+import groovy.json.*
+
+import static javax.swing.JFrame.*
 
 def validateURL = { url ->
     assert url.text?.size() > 0
@@ -41,7 +44,20 @@ new SwingBuilder().with {
             scrollPane( constraints:'wrap' ) {
                 textArea id:'taPluginExample', columns:40, rows:15
             }
-            
+
+            button 'Auto-fill', actionPerformed:{ e ->
+                def todo = new JsonSlurper().parseText(
+                    new URL( 'https://api.github.com/repos/aalmiray/gradle-plugins/issues?state=open' ).text
+                ).body*.findAll( ~'https://\\S+' ).flatten()
+                def selected = optionPane().showInputDialog( null, 'Select One', '', JOptionPane.OK_CANCEL_OPTION, null, todo as String[], null )
+                if( selected ) {
+                    tfPluginName.text = selected.split( '/' )[ -1 ]
+                    tfPluginUrl.text = selected
+                    tfAuthorUrl.text = selected.split( '/' )[ 0..-2 ].join( '/' )
+                    tfAuthorName.text = selected.split( '/' )[ -2 ]
+                    java.awt.Desktop.desktop.browse( new URI( selected ) ) ;
+                }
+            }
             button 'Generate!', actionPerformed:{ e ->
                 validateURL( new URL( tfPluginUrl.text ) )
                 validateURL( new URL( tfAuthorUrl.text ) )
